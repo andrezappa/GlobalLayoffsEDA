@@ -16,43 +16,39 @@ RENAME COLUMN total_laid_offtotal_laid_off TO total_laid_off;
 -- Transorm NULL text value in null value
 UPDATE layoffs_staging
 SET company = NULL
-WHERE company = 'NULL';
+WHERE company = 'NULL' OR company = '';
 
 UPDATE layoffs_staging
 SET location = NULL
-WHERE location = 'NULL';
+WHERE location = 'NULL' OR location = '';
 
 UPDATE layoffs_staging
 SET industry = NULL
-WHERE industry = 'NULL';
+WHERE industry = 'NULL' OR industry = '';
 
 UPDATE layoffs_staging
 SET total_laid_off = NULL
-WHERE total_laid_off = 'NULL';
+WHERE total_laid_off = 'NULL' OR total_laid_off = '';
 
 UPDATE layoffs_staging
 SET percentage_laid_off = NULL
-WHERE percentage_laid_off = 'NULL';
+WHERE percentage_laid_off = 'NULL' OR percentage_laid_off = '';
 
 UPDATE layoffs_staging
 SET date = NULL
-WHERE date = 'NULL';
+WHERE date = 'NULL' OR date = '';
 
 UPDATE layoffs_staging
 SET stage = NULL
-WHERE stage = 'NULL';
-
-UPDATE layoffs_staging
-SET stage = NULL
-WHERE stage = 'NULL';
+WHERE stage = 'NULL' OR stage = '';
 
 UPDATE layoffs_staging
 SET country = NULL
-WHERE country = 'NULL';
+WHERE country = 'NULL' OR country = '';
 
 UPDATE layoffs_staging
 SET funds_raised_millions = NULL
-WHERE funds_raised_millions = 'NULL';
+WHERE funds_raised_millions = 'NULL' OR funds_raised_millions = '';
 
 
 -- Remove Duplicate
@@ -63,7 +59,6 @@ WITH duplicates AS (
     SELECT ctid, 
            ROW_NUMBER() OVER (
                PARTITION BY company, industry, total_laid_off, percentage_laid_off, date, stage, country, funds_raised_millions 
-
            ) AS row_num
     FROM layoffs_staging
 )
@@ -142,6 +137,39 @@ ALTER COLUMN date TYPE DATE USING date::DATE;
 
 
 -- Null values or blank values
+SELECT * 
+FROM layoffs_staging
+WHERE industry IS NULL
+OR industry = '';
+
+SELECT *
+FROM layoffs_staging
+WHERE company LIKE 'Bally%';
+
+SELECT * 
+FROM layoffs_staging tbl1
+JOIN layoffs_staging tbl2
+	ON tbl1.company = tbl2.company
+	AND tbl1.location = tbl1.location
+WHERE tbl1.industry IS NULL
+AND tbl2.industry IS NOT NULL;
+
+UPDATE layoffs_staging AS tbl1
+SET industry = tbl2.industry
+FROM layoffs_staging AS tbl2
+WHERE tbl1.company = tbl2.company
+	AND tbl1.location = tbl1.location
+	AND tbl1.industry IS NULL
+	AND tbl2.industry IS NOT NULL;
 
 
 -- Remove unnecessary
+SELECT *
+FROM layoffs_staging
+WHERE total_laid_off IS NULL
+AND percentage_laid_off IS NULL;
+
+DELETE 
+FROM layoffs_staging
+WHERE total_laid_off IS NULL
+AND percentage_laid_off IS NULL;
