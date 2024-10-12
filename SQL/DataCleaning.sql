@@ -13,7 +13,7 @@ FROM layoffs;
 ALTER TABLE layoffs_staging
 RENAME COLUMN total_laid_offtotal_laid_off TO total_laid_off;
 
--- Transorm NULL text value in null value
+-- Transform NULL text value in null value
 UPDATE layoffs_staging
 SET company = NULL
 WHERE company = 'NULL' OR company = '';
