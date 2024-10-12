@@ -13,43 +13,59 @@ FROM layoffs;
 ALTER TABLE layoffs_staging
 RENAME COLUMN total_laid_offtotal_laid_off TO total_laid_off;
 
--- Transform NULL text value in null value
-UPDATE layoffs_staging
-SET company = NULL
-WHERE company = 'NULL' OR company = '';
+-- Dataset Update. Newer data found
+-- 1. Rename Old Tables
+ALTER TABLE layoffs
+	RENAME TO old_layoffs;
 
-UPDATE layoffs_staging
-SET location = NULL
-WHERE location = 'NULL' OR location = '';
+ALTER TABLE layoffs_staging
+	RENAME TO old_layoffs_staging;
 
-UPDATE layoffs_staging
-SET industry = NULL
-WHERE industry = 'NULL' OR industry = '';
+-- 2. Drop old tables
 
-UPDATE layoffs_staging
-SET total_laid_off = NULL
-WHERE total_laid_off = 'NULL' OR total_laid_off = '';
+-- 3. Create the table for the new data
+CREATE TABLE layoffs (
+    Company VARCHAR(255),
+    Location_HQ VARCHAR(255),
+    Industry VARCHAR(100),
+    Laid_Off_Count INTEGER,
+    Date DATE,
+    Source TEXT,
+    Funds_Raised NUMERIC,
+    Stage VARCHAR(50),
+    Date_Added DATE,
+    Country VARCHAR(100),
+    Percentage DECIMAL(5, 2),
+    List_of_Employees_Laid_Off TEXT
+);
 
-UPDATE layoffs_staging
-SET percentage_laid_off = NULL
-WHERE percentage_laid_off = 'NULL' OR percentage_laid_off = '';
+-- 4. Duplicate the layoffs table with new data to have raw data always available
+CREATE TABLE layoffs_staging AS
+SELECT *
+FROM layoffs;
 
-UPDATE layoffs_staging
-SET date = NULL
-WHERE date = 'NULL' OR date = '';
+SELECT * 
+FROM layoffs_staging;
 
-UPDATE layoffs_staging
-SET stage = NULL
-WHERE stage = 'NULL' OR stage = '';
+-- 5. Rename the new columns
+ALTER TABLE layoffs_staging
+RENAME COLUMN location_hq TO location; 
 
-UPDATE layoffs_staging
-SET country = NULL
-WHERE country = 'NULL' OR country = '';
+ALTER TABLE layoffs_staging
+RENAME COLUMN laid_off_count TO total_laid_off;
 
-UPDATE layoffs_staging
-SET funds_raised_millions = NULL
-WHERE funds_raised_millions = 'NULL' OR funds_raised_millions = '';
+ALTER TABLE layoffs_staging
+RENAME COLUMN funds_raised TO funds_raised_millions;
 
+ALTER TABLE layoffs_staging
+RENAME COLUMN percentage TO percentage_laid_off;
+
+-- Remove unnecessary columns
+ALTER TABLE layoffs_staging
+DROP COLUMN source;
+
+ALTER TABLE layoffs_staging
+DROP COLUMN list_of_employees_laid_off;
 
 -- Remove Duplicate
 SELECT *
@@ -79,25 +95,17 @@ FROM layoffs_staging;
 UPDATE layoffs_staging
 SET company = TRIM(company);
 
--- Group by Crypto category
+-- Check for industry type
 SELECT DISTINCT industry 
 FROM layoffs_staging
 ORDER BY 1;
 
-SELECT *
-FROM layoffs_staging 
-WHERE industry LIKE 'Crypto%'
-ORDER BY 1;
-
-UPDATE layoffs_staging
-SET industry = 'Crypto'
-WHERE industry LIKE 'Crypto%';
-
--- Unify "Düsseldorf" location
+-- Check for location location
 SELECT DISTINCT location 
 FROM layoffs_staging
 ORDER BY 1;
-	
+
+-- Unify "Düsseldorf" location
 SELECT *
 FROM layoffs_staging 
 WHERE location LIKE 'Dusseldorf'
@@ -107,61 +115,16 @@ UPDATE layoffs_staging
 SET location = 'Düsseldorf'
 WHERE location LIKE 'Dusseldorf';
 
--- Remove "United States." country
+-- Check for country
 SELECT DISTINCT country 
 FROM layoffs_staging
 ORDER BY 1;
 
-SELECT DISTINCT country, TRIM(TRAILING '.' FROM country) 
-FROM layoffs_staging
-ORDER BY 1;
-
-UPDATE layoffs_staging
-SET country = TRIM(TRAILING '.' FROM country) 
-WHERE country LIKE 'United States%';
-
--- Modify date type from text to date	
-SELECT date
-FROM layoffs_staging;
-
-SELECT DISTINCT date, REGEXP_REPLACE(REGEXP_REPLACE(date, '^(\d{1})/', '0\1/'), '/(\d{1})/', '/0\1/') AS formattedData
-FROM layoffs_staging
-	ORDER BY 1
-	
-UPDATE layoffs_staging
-SET date = TO_DATE(REGEXP_REPLACE(REGEXP_REPLACE(date, '^(\d{1})/', '0\1/'), '/(\d{1})/', '/0\1/'),'MM/DD/YYYY')
-WHERE date ~ '^\d{1,2}/\d{1,2}/\d{4}$'; -- remove dates without valid format
-
-ALTER TABLE layoffs_staging 
-ALTER COLUMN date TYPE DATE USING date::DATE;
-
-
--- Null values or blank values
+-- Check for blank or null value in industry
 SELECT * 
 FROM layoffs_staging
 WHERE industry IS NULL
 OR industry = '';
-
-SELECT *
-FROM layoffs_staging
-WHERE company LIKE 'Bally%';
-
-SELECT * 
-FROM layoffs_staging tbl1
-JOIN layoffs_staging tbl2
-	ON tbl1.company = tbl2.company
-	AND tbl1.location = tbl1.location
-WHERE tbl1.industry IS NULL
-AND tbl2.industry IS NOT NULL;
-
-UPDATE layoffs_staging AS tbl1
-SET industry = tbl2.industry
-FROM layoffs_staging AS tbl2
-WHERE tbl1.company = tbl2.company
-	AND tbl1.location = tbl1.location
-	AND tbl1.industry IS NULL
-	AND tbl2.industry IS NOT NULL;
-
 
 -- Remove unnecessary
 SELECT *
