@@ -31,7 +31,7 @@ CREATE TABLE layoffs (
     Laid_Off_Count INTEGER,
     Date DATE,
     Source TEXT,
-    Funds_Raised NUMERIC,
+    Funds_Raised INTEGER,
     Stage VARCHAR(50),
     Date_Added DATE,
     Country VARCHAR(100),
@@ -45,7 +45,10 @@ SELECT *
 FROM layoffs;
 
 SELECT * 
-FROM layoffs_staging;
+FROM layoffs_staging
+		WHERE funds_raised_millions IS NOT NULL
+	AND total_laid_off IS NOT NULL
+	ORDER BY total_laid_off DESC;;
 
 -- 5. Rename the new columns
 ALTER TABLE layoffs_staging
@@ -125,6 +128,20 @@ SELECT *
 FROM layoffs_staging
 WHERE industry IS NULL
 OR industry = '';
+
+-- Fix industry = 'unkown'
+SELECT * 
+	FROM layoffs_staging
+	WHERE industry = 'Unknown';
+
+SELECT * 
+	FROM layoffs_staging
+	WHERE company = 'Appsmith';
+
+UPDATE layoffs_staging
+SET industry = 'Infrastructure' -- based on personal research
+WHERE company = 'Appsmith'
+	AND industry = 'Unknown';
 
 -- Remove unnecessary
 SELECT *
